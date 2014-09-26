@@ -4,34 +4,35 @@ from htmlentitydefs import name2codepoint
 
 class MyHTMLParser(HTMLParser):
 
-    def __init__(self, outputFile):
+    def __init__(self, outputFile, fileDebug):
         HTMLParser.__init__(self)
         self.outputFile = outputFile
+        self.fileDebug = fileDebug
         self.tagDepth = 0
+        self.lastAttr = ""
 
     def handle_starttag(self, tag, attrs):
         self.tagDepth = self.tagDepth + 1
-        self.outputFile.write("Start tag: {0}, tag depth: {1}".format(tag, self.tagDepth))
+        self.fileDebug.write("Start tag: {0}, tag depth: {1}\n".format(tag, self.tagDepth))
         for attr in attrs:
-            self.outputFile.write("     attr: {0}".format(attr))
+            self.fileDebug.write("     attr: |{0}|\n".format(attr))
+            self.lastAttr = attr
     def handle_endtag(self, tag):
         self.tagDepth = self.tagDepth - 1
-        self.outputFile.write( "End tag  : {0}, tag depth: {1}".format(tag, self.tagDepth))
+        self.fileDebug.write( "End tag  : {0}, tag depth: {1}\n".format(tag, self.tagDepth))
     def handle_data(self, data):
-        self.outputFile.write( "Data  : %s" % (data))
+        self.fileDebug.write( "Valor  : %s\n" % (data))
+        nameAttr = "stylefont-size:7.0pt;font-family:\"Times New Roman\",\"serif\""
+        lastAttrStr = ''.join(self.lastAttr)
+        if lastAttrStr == nameAttr:
+            self.outputFile.write("Nome rota: {0}\n".format(data))
+        else:
+            self.fileDebug.write( "lastAttr\n{0}\n{1}\n".format(len(lastAttrStr), lastAttrStr))
     def handle_comment(self, data):
-        self.outputFile.write( "Comment  : %s" % (data))
+        self.fileDebug.write( "Comment  : %s\n" % (data))
     def handle_entityref(self, name):
         c = unichr(name2codepoint[name])
-        #self.outputFile.write(" Named ent:{0}".format(c))
-    def handle_charref(self, name):
-        if name.startswith('x'):
-            c = unichr(int(name[1:], 16))
-        else:
-            c = unichr(int(name))
-        print "Num ent  :", c
-    def handle_decl(self, data):
-        self.outputFile.write( "Decl  : %s" % (data))
+        #self.fileDebug.write(" Named ent:{0}".format(c))
         
         
         
@@ -60,15 +61,16 @@ def ehLinhaRota(line):
         
 #    return True
 
-
+fileDebug = open("debug.txt", "w")
 file = open("output.txt", "w")
 
 htmlStr = ""
 for line in fileinput.input():
     htmlStr += line
     
-parser = MyHTMLParser(file)
+parser = MyHTMLParser(file, fileDebug)
 parser.feed(htmlStr)
 
 
 file.close()
+fileDebug.close()
