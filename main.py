@@ -19,8 +19,8 @@ class MyHTMLParser(HTMLParser):
         if tag == "b":
             self.insideBold = True
         for attr in attrs:
-            self.fileDebug.write("     attr: |{0}|\n".format(attr))
-            self.lastAttr = attr
+            self.lastAttr = ''.join(attr)
+            self.fileDebug.write("     attr: |{0}|\n".format(self.lastAttr))
     def handle_endtag(self, tag):
         self.tagDepth = self.tagDepth - 1
         if tag == "b":
@@ -29,7 +29,8 @@ class MyHTMLParser(HTMLParser):
     def handle_data(self, data):
         self.fileDebug.write( "Valor  : %s\n" % (data))
         nameAttr = "stylefont-size:7.0pt;font-family:\"Times New Roman\",\"serif\""
-        lastAttrStr = ''.join(self.lastAttr)
+        cableTypeAttr = "stylefont-size:7.0pt;font-family:\"Times New Roman\",\"serif\";\nletter-spacing:-.35pt"
+        lastAttrStr = self.lastAttr
         if lastAttrStr == nameAttr:
             if self.insideBold:
                 self.outputFile.write("Nome rota: {0}\n".format(data))
@@ -37,6 +38,14 @@ class MyHTMLParser(HTMLParser):
             else:
                 self.outputFile.write("### Rota: {0}\n".format(data))
                 self.cableList[-1]['route'] += data
+                
+        if lastAttrStr == cableTypeAttr:
+            self.outputFile.write(" +++++++++++++ Cable type: {}".format(data))
+            if self.cableList[-1].has_key('type'):
+                self.cableList[-1]['type'] = self.cableList[-1]['type'] + " | " + data
+            else:
+                self.cableList[-1]['type'] = data
+            
     def handle_comment(self, data):
         self.fileDebug.write( "Comment  : %s\n" % (data))
     def handle_entityref(self, name):
@@ -90,6 +99,9 @@ MCTs = {}
 for item in parser.cableList:
     route = item['route']
     cableName = item['cableName']
+    cableType = ""
+    if item.has_key('type'):
+        cableType = item['type']
     route = route.replace('\n', ' ')
     route = route.split(' - ')
     file.write("Cable: {0}, route: {1}\n".format(cableName, route))
@@ -97,14 +109,15 @@ for item in parser.cableList:
         if ehMCT(itemInRoute):
             file.write("MCT: {0}\n".format(itemInRoute))
             if MCTs.has_key(itemInRoute):
-                MCTs[itemInRoute].append(cableName)
+                MCTs[itemInRoute].append({'name': cableName, 'type': cableType})
             else:
-                MCTs[itemInRoute] = [cableName]
+                MCTs[itemInRoute] = [{'name': cableName, 'type': cableType}]
 
 for mctName in MCTs:
     file.write("MCT name: {0}\n".format(mctName))
     for circuit in MCTs[mctName]:
-        file.write("Circuit: {}\n".format(circuit))
+        type = circuit['type'].replace("\n", "")
+        file.write("Circuit: {0}, type: {1}\n".format(circuit['name'], type))
                 
 file.close()
 fileDebug.close()
