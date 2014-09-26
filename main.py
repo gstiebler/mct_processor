@@ -11,6 +11,7 @@ class MyHTMLParser(HTMLParser):
         self.tagDepth = 0
         self.lastAttr = ""
         self.insideBold = False
+        self.cableList = []
 
     def handle_starttag(self, tag, attrs):
         self.tagDepth = self.tagDepth + 1
@@ -32,8 +33,10 @@ class MyHTMLParser(HTMLParser):
         if lastAttrStr == nameAttr:
             if self.insideBold:
                 self.outputFile.write("Nome rota: {0}\n".format(data))
+                self.cableList.append({'cableName': data, 'route': ''})
             else:
                 self.outputFile.write("### Rota: {0}\n".format(data))
+                self.cableList[-1]['route'] += data
     def handle_comment(self, data):
         self.fileDebug.write( "Comment  : %s\n" % (data))
     def handle_entityref(self, name):
@@ -54,6 +57,12 @@ def ehLinhaRota(line):
     else:
         return False
     return True
+    
+def ehMCT(name):
+    if name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS":
+        return True
+    else:
+        return False
     
     
 #def ehLinhaNome(line):
@@ -77,6 +86,25 @@ for line in fileinput.input():
 parser = MyHTMLParser(file, fileDebug)
 parser.feed(htmlStr)
 
+MCTs = {}
+for item in parser.cableList:
+    route = item['route']
+    cableName = item['cableName']
+    route = route.replace('\n', ' ')
+    route = route.split(' - ')
+    file.write("Cable: {0}, route: {1}\n".format(cableName, route))
+    for itemInRoute in route:
+        if ehMCT(itemInRoute):
+            file.write("MCT: {0}\n".format(itemInRoute))
+            if MCTs.has_key(itemInRoute):
+                MCTs[itemInRoute].append(cableName)
+            else:
+                MCTs[itemInRoute] = [cableName]
 
+for mctName in MCTs:
+    file.write("MCT name: {0}\n".format(mctName))
+    for circuit in MCTs[mctName]:
+        file.write("Circuit: {}\n".format(circuit))
+                
 file.close()
 fileDebug.close()
