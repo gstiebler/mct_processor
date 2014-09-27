@@ -37,15 +37,18 @@ class MyHTMLParser(HTMLParser):
                 self.cableList.append({'cableName': data, 'route': ''})
             else:
                 #self.outputFile.write("### Rota: {0}\n".format(data))
-                self.cableList[-1]['route'] += data
+                if len(self.cableList) > 0:
+                    self.cableList[-1]['route'] += data
                 
         if lastAttrStr == cableTypeAttr:
             #self.outputFile.write(" +++++++++++++ Cable type: {}".format(data))
-            if self.cableList[-1].has_key('type'):
-                if len(data) >= 3:
-                    self.cableList[-1]['type'] = self.cableList[-1]['type'] + " | " + data
-            else:
-                self.cableList[-1]['type'] = data
+            
+            if len(self.cableList) > 0:
+                if self.cableList[-1].has_key('type'):
+                    if len(data) >= 3:
+                        self.cableList[-1]['type'] = self.cableList[-1]['type'] + " | " + data
+                else:
+                    self.cableList[-1]['type'] = data
             
     def handle_comment(self, data):
         self.fileDebug.write( "Comment  : %s\n" % (data))
@@ -54,19 +57,6 @@ class MyHTMLParser(HTMLParser):
         #self.fileDebug.write(" Named ent:{0}".format(c))
         
         
-        
-def ehLinhaRota(line):
-    strings = line.split(" - ")
-    if len(strings) > 1:
-        for str in strings:
-            if len(str.split(" ")) > 1:
-                return False
-                
-            if len(str) < 3:
-                return False
-    else:
-        return False
-    return True
     
 def ehMCT(name):
     if name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS":
@@ -74,6 +64,8 @@ def ehMCT(name):
     else:
         return False
 
+        
+        
 fileDebug = open("debug.txt", "w")
 file = open("output.txt", "w")
 
