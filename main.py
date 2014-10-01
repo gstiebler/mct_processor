@@ -30,6 +30,7 @@ class MyHTMLParser(HTMLParser):
         self.fileDebug.write( "Valor  : %s\n" % (data))
         nameAttr = "stylefont-size:7.0pt;font-family:\"Times New Roman\",\"serif\""
         cableTypeAttr = "stylefont-size:7.0pt;font-family:\"Times New Roman\",\"serif\";\nletter-spacing:-.35pt"
+        concepAttr = "stylefont-size:7.0pt;font-family:\"Times New Roman\",\"serif\";\nletter-spacing:-.15pt"
         lastAttrStr = self.lastAttr
         if lastAttrStr == nameAttr:
             if self.insideBold:
@@ -49,6 +50,11 @@ class MyHTMLParser(HTMLParser):
                         self.cableList[-1]['type'] = self.cableList[-1]['type'] + " | " + data
                 else:
                     self.cableList[-1]['type'] = data
+                
+        if lastAttrStr == concepAttr:
+            self.outputFile.write(" +++++++++++++ Cable concep: {}\n".format(data))
+            if len(self.cableList) > 0:
+                self.cableList[-1]['concep'] = data
             
     def handle_comment(self, data):
         self.fileDebug.write( "Comment  : %s\n" % (data))
@@ -81,25 +87,30 @@ for item in parser.cableList:
     route = item['route']
     cableName = item['cableName']
     cableType = ""
+    concep = ""
     if item.has_key('type'):
         cableType = item['type']
+    if item.has_key('concep'):
+        cableType = item['concep']
     route = route.replace('\n', ' ')
     route = route.split(' - ')
     #file.write("Cable: {0}, route: {1}\n".format(cableName, route))
     for itemInRoute in route:
         if ehMCT(itemInRoute):
             #file.write("MCT: {0}\n".format(itemInRoute))
+            currObj = {'name': cableName, 'type': cableType, 'concep': concep}
             if MCTs.has_key(itemInRoute):
-                MCTs[itemInRoute].append({'name': cableName, 'type': cableType})
+                MCTs[itemInRoute].append(currObj)
             else:
-                MCTs[itemInRoute] = [{'name': cableName, 'type': cableType}]
+                MCTs[itemInRoute] = [currObj]
 
 for mctName in MCTs:
     file.write("MCT name: {0}\n".format(mctName))
     for circuit in MCTs[mctName]:
         circuitStr = circuit['name'].replace(" ", "")
         type = circuit['type'].replace("\n", "")
-        file.write("Circuit: {0}, type: {1}\n".format(circuitStr, type))
+        concep = circuit['concep']
+        file.write("Circuit: {0}, type: {1}, concep: {2}\n".format(circuitStr, type, concep))
                 
 file.close()
 fileDebug.close()
