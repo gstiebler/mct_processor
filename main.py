@@ -33,18 +33,22 @@ class MyHTMLParser(HTMLParser):
         lastAttrStr = self.lastAttr
         if lastAttrStr == nameAttr:
             if self.insideBold:
-                self.outputFile.write("Nome rota: {0}\n".format(data))
+                #self.outputFile.write("Nome rota: {0}\n".format(data))
                 self.cableList.append({'cableName': data, 'route': ''})
             else:
-                self.outputFile.write("### Rota: {0}\n".format(data))
-                self.cableList[-1]['route'] += data
+                #self.outputFile.write("### Rota: {0}\n".format(data))
+                if len(self.cableList) > 0:
+                    self.cableList[-1]['route'] += data
                 
         if lastAttrStr == cableTypeAttr:
-            self.outputFile.write(" +++++++++++++ Cable type: {}".format(data))
-            if self.cableList[-1].has_key('type'):
-                self.cableList[-1]['type'] = self.cableList[-1]['type'] + " | " + data
-            else:
-                self.cableList[-1]['type'] = data
+            #self.outputFile.write(" +++++++++++++ Cable type: {}".format(data))
+            
+            if len(self.cableList) > 0:
+                if self.cableList[-1].has_key('type'):
+                    if len(data) >= 3:
+                        self.cableList[-1]['type'] = self.cableList[-1]['type'] + " | " + data
+                else:
+                    self.cableList[-1]['type'] = data
             
     def handle_comment(self, data):
         self.fileDebug.write( "Comment  : %s\n" % (data))
@@ -53,38 +57,15 @@ class MyHTMLParser(HTMLParser):
         #self.fileDebug.write(" Named ent:{0}".format(c))
         
         
-        
-def ehLinhaRota(line):
-    strings = line.split(" - ")
-    if len(strings) > 1:
-        for str in strings:
-            if len(str.split(" ")) > 1:
-                return False
-                
-            if len(str) < 3:
-                return False
-    else:
-        return False
-    return True
     
 def ehMCT(name):
     if name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS":
         return True
     else:
         return False
-    
-    
-#def ehLinhaNome(line):
-#    strings = line.split(" ")
-#    if len(strings != 2:
-#        return False
-#    if len(strings[0]) < 3 or len(strings[1]) < 3:
-#        return False
-#    if not strings[0].isdigit():
-#        return False
-        
-#    return True
 
+        
+        
 fileDebug = open("debug.txt", "w")
 file = open("output.txt", "w")
 
@@ -104,10 +85,10 @@ for item in parser.cableList:
         cableType = item['type']
     route = route.replace('\n', ' ')
     route = route.split(' - ')
-    file.write("Cable: {0}, route: {1}\n".format(cableName, route))
+    #file.write("Cable: {0}, route: {1}\n".format(cableName, route))
     for itemInRoute in route:
         if ehMCT(itemInRoute):
-            file.write("MCT: {0}\n".format(itemInRoute))
+            #file.write("MCT: {0}\n".format(itemInRoute))
             if MCTs.has_key(itemInRoute):
                 MCTs[itemInRoute].append({'name': cableName, 'type': cableType})
             else:
@@ -116,8 +97,9 @@ for item in parser.cableList:
 for mctName in MCTs:
     file.write("MCT name: {0}\n".format(mctName))
     for circuit in MCTs[mctName]:
+        circuitStr = circuit['name'].replace(" ", "")
         type = circuit['type'].replace("\n", "")
-        file.write("Circuit: {0}, type: {1}\n".format(circuit['name'], type))
+        file.write("Circuit: {0}, type: {1}\n".format(circuitStr, type))
                 
 file.close()
 fileDebug.close()
