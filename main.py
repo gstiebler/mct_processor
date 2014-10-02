@@ -79,11 +79,26 @@ class MyHTMLParser(HTMLParser):
 def ehMCT(name):
     return name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS"
 
-def isCircuitName(attr):
-    if not attr.has_key('left') or not attr.has_key('id'):
+def hasCircuitName(itemsInLine):
+    if not itemsInLine.has_key(40):
         return False
-    return attr['left'] == '40' and attr['id'] == 'f3'
         
+    if not itemsInLine[40].attrs.has_key('id'):
+        return False
+    
+    return itemsInLine[40].attrs['id'] == 'f3'
+        
+
+def hasRoute(itemsInLine):
+    if not itemsInLine.has_key(40):
+        return False
+        
+    return itemsInLine[40].attrs['id'] == 'f4'
+    
+    
+def getAttr(itemsInLine, X):
+    return itemsInLine[X].attrs['value']
+    
         
 fileDebug = open("debug.txt", "w")
 file = open("output.txt", "w")
@@ -98,21 +113,49 @@ parser.feed(htmlStr)
 
 sortedList = sorted(parser.htmlItems.items()) 
 
+state = "none"
+nameX = 40
+typeX = 504
+especX = 656
+seccX = 606
+routeX = 40
+
+outputOrder = ['name', 'type', 'espec', 'secc', 'route']
+
 for sortedItem in sortedList:
     top = sortedItem[0]
+    itemsInLine = sortedItem[1]
     fileDebug.write("Top: {}\n".format(top))
     
-    itemsInLine = sortedItem[1]
     sortedLine = sorted(itemsInLine.items())
     for lineItem in sortedLine:
         left = lineItem[0]
         htmlItem = lineItem[1]
         attrs = htmlItem.attrs
-        if isCircuitName(attrs):
-            fileDebug.write("Circuit name: {}\n".format(attrs['value']))
-            circuit = {'name': attrs['value']}
+        fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
+    
+    if state == "none":
+        if hasCircuitName(itemsInLine):
+            circuit = {
+                    'name': getAttr(itemsInLine, nameX),
+                    'type': getAttr(itemsInLine, typeX),
+                    'espec': getAttr(itemsInLine, especX),
+                }
+            state = "circuit_header_1"
+    elif state == "circuit_header_1":
+        circuit['secc'] = getAttr(itemsInLine, seccX)
+        state = "route"
+    elif state == "route":
+        if hasRoute(itemsInLine):
+            route = getAttr(itemsInLine, routeX)
+            route = route.split(' - ')
+            circuit['route'] = route
         else:
-            fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
-                
+            file.write("++++++++++++\n")
+            for outputName in outputOrder:
+                file.write("{}: {}\n".format(outputName, circuit[outputName]))
+            state = "none"
+            
+     
 file.close()
 fileDebug.close()
