@@ -10,11 +10,14 @@ file = open("output.csv", "w")
 count = 0
 for currDir, dirs, files in os.walk(HTMLDir):
 
-    for fileName in files:
-        if fileName[:4] != "page" or fileName[-5:] != ".html":
-            continue
+    fileCounter = 1
+    while True:
+        fileAndPath = "{}\\page{}.html".format(currDir, fileCounter)
+        fileCounter = fileCounter + 1
             
-        fileAndPath = "{}\\{}".format(currDir, fileName)
+        if not os.path.isfile(fileAndPath):
+            break
+            
         inputFile = open(fileAndPath, "r")
         htmlStr = inputFile.read()
         inputFile.close()
@@ -23,7 +26,7 @@ for currDir, dirs, files in os.walk(HTMLDir):
         msg = "{} - Processando arquivo {}\n".format(count, fileAndPath)
         print msg
         fileDebug.write(msg)
-        
+        html_to_csv.convert(file, fileDebug, htmlStr)
 
 file.close()
 fileDebug.close()

@@ -33,12 +33,54 @@ class MyHTMLParser(HTMLParser):
         self.lastAttr = {}
         self.cableList = []
         self.htmlItems = {}
+        self.lastTag = ""
+        self.titleHeaderFontId = ""
+        self.routeFontId = ""
+        self.circuitNameFontId = ""
+        
+    def processFontsIds(self, styleStr):
+        
+        titleHeaderFont = "font-family:sans-serif; font-weight:bold; font-style:normal;"
+        routeFont = "font-family:serif; font-weight:normal; font-style:normal;"
+        circuitNameFont = "font-family:serif; font-weight:bold; font-style:normal;"
+
+        fonts = styleStr.split("\n")
+        
+        fontsIds = {}
+        print len(fonts)
+        for font in fonts:
+            if font is None:
+                continue
+                
+            regexResult = re.search('\#(f\d)', font)
+            if regexResult is None:
+                continue
+                
+            fontId = regexResult.group(1)
+            fontDescription = re.search('\{\s(.*)\s\}', font).group(1)
+            
+            fontsIds[fontDescription] = fontId
+            
+            
+        #self.fileDebug.write("{}\n".format(fontsIds))
+        
+        if not fontsIds.has_key(titleHeaderFont) or not fontsIds.has_key(routeFont) or not fontsIds.has_key(circuitNameFont):
+            return
+        
+        self.titleHeaderFontId = fontsIds[titleHeaderFont]
+        self.routeFontId = fontsIds[routeFont]
+        self.circuitNameFontId = fontsIds[circuitNameFont]
+        
+        #self.fileDebug.write("{} {} {}\n".format(self.titleHeaderFontId, self.routeFontId, self.circuitNameFontId))
+        
+        
 
     def handle_starttag(self, tag, attrs):
         self.tagDepth = self.tagDepth + 1
         #self.fileDebug.write("Start tag: {0}, tag depth: {1}\n".format(tag, self.tagDepth))
         #self.fileDebug.write("     attr: |{0}|\n".format(attrs))
         
+        self.lastTag = tag
         if tag == "div":
             for attr in attrs:
                 if attr[0] == "style":
@@ -61,7 +103,12 @@ class MyHTMLParser(HTMLParser):
     def handle_data(self, data):
         if data == "\n":
             return
-        #self.fileDebug.write( "Valor  : {}\n".format(data))
+            
+        if self.lastTag == "style":
+            #self.fileDebug.write( "style tag: {}\n".format(data))
+            self.processFontsIds(data)
+            return
+            
         lastAttr = self.lastAttr
         lastAttr['value'] = data
         htmlItem = HTMLItem(copy.deepcopy(lastAttr))
@@ -74,21 +121,21 @@ class MyHTMLParser(HTMLParser):
 def isMCT(name):
     return name[:2] == "BF" or name[:2] == "BS"
 
-def hasCircuitName(itemsInLine):
+def hasCircuitName(itemsInLine, htmlParser):
     if not itemsInLine.has_key(40):
         return False
         
     if not itemsInLine[40].attrs.has_key('id'):
         return False
     
-    return itemsInLine[40].attrs['id'] == 'f3'
+    return itemsInLine[40].attrs['id'] == htmlParser.circuitNameFontId
         
 
-def hasRoute(itemsInLine):
+def hasRoute(itemsInLine, htmlParser):
     if not itemsInLine.has_key(40):
         return False
         
-    return itemsInLine[40].attrs['id'] == 'f4'
+    return itemsInLine[40].attrs['id'] == htmlParser.routeFontId
     
     
 def getAttr(itemsInLine, X, fileDebug):
@@ -100,7 +147,7 @@ def getAttr(itemsInLine, X, fileDebug):
         if abs(key - X) < DELTA_MAX:
             return value.attrs['value']
     
-    fileDebug.write("X not found: {}. Avaliable: {}\n", X, itemsInLine)
+    fileDebug.write("X not found: {}. Avaliable: {}\n".format(X, itemsInLine))
     return ""
     
 def outputCircuit(circuit, MCT, file):
@@ -144,7 +191,7 @@ def convert(file, fileDebug, htmlStr):
             #fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
             
         if state == "none" or state == "route":
-            if hasCircuitName(itemsInLine):
+            if hasCircuitName(itemsInLine, parser):
                 circuit = {
                         'name': getAttr(itemsInLine, nameX, fileDebug),
                         'type': getAttr(itemsInLine, typeX, fileDebug),
@@ -152,7 +199,7 @@ def convert(file, fileDebug, htmlStr):
                     }
                 state = "circuit_header"
             if state == "route":
-                if hasRoute(itemsInLine):
+                if hasRoute(itemsInLine, parser):
                     route = getAttr(itemsInLine, routeX, fileDebug)
                     route = route.split(' - ')
                     
