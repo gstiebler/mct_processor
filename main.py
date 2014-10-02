@@ -77,11 +77,12 @@ class MyHTMLParser(HTMLParser):
         
         
 def ehMCT(name):
-    if name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS":
-        return True
-    else:
-        return False
+    return name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS"
 
+def isCircuitName(attr):
+    if not attr.has_key('left') or not attr.has_key('id'):
+        return False
+    return attr['left'] == '40' and attr['id'] == 'f3'
         
         
 fileDebug = open("debug.txt", "w")
@@ -98,11 +99,20 @@ parser.feed(htmlStr)
 sortedList = sorted(parser.htmlItems.items()) 
 
 for sortedItem in sortedList:
-    fileDebug.write("Top: {}\n".format(sortedItem[0]))
+    top = sortedItem[0]
+    fileDebug.write("Top: {}\n".format(top))
     
-    sortedLine = sorted(sortedItem[1].items())
+    itemsInLine = sortedItem[1]
+    sortedLine = sorted(itemsInLine.items())
     for lineItem in sortedLine:
-        fileDebug.write("Left: {}, attrs: {}\n".format(lineItem[0], lineItem[1].attrs))
+        left = lineItem[0]
+        htmlItem = lineItem[1]
+        attrs = htmlItem.attrs
+        if isCircuitName(attrs):
+            fileDebug.write("Circuit name: {}\n".format(attrs['value']))
+            circuit = {'name': attrs['value']}
+        else:
+            fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
                 
 file.close()
 fileDebug.close()
