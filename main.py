@@ -37,7 +37,7 @@ class MyHTMLParser(HTMLParser):
         self.tagDepth = 0
         self.lastAttr = {}
         self.cableList = []
-        self.htmlItems = []
+        self.htmlItems = {}
 
     def handle_starttag(self, tag, attrs):
         self.tagDepth = self.tagDepth + 1
@@ -64,14 +64,18 @@ class MyHTMLParser(HTMLParser):
         self.fileDebug.write( "End tag  : {0}, tag depth: {1}\n".format(tag, self.tagDepth))
         
     def handle_data(self, data):
+        if data == "\n":
+            return
         self.fileDebug.write( "Valor  : {}\n".format(data))
         lastAttr = self.lastAttr
         lastAttr['value'] = data
+        htmlItem = HTMLItem(copy.deepcopy(lastAttr))
+        if not self.htmlItems.has_key(htmlItem.top):
+            self.htmlItems[htmlItem.top] = {}
+        self.htmlItems[htmlItem.top][htmlItem.left] = htmlItem
         self.fileDebug.write("lastAttr: {}\n".format(lastAttr))
-        self.htmlItems.append(HTMLItem(copy.deepcopy(lastAttr)))
         
         
-    
 def ehMCT(name):
     if name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS":
         return True
@@ -86,15 +90,19 @@ file = open("output.txt", "w")
 htmlStr = ""
 for line in fileinput.input():
     htmlStr += line
+   
     
 parser = MyHTMLParser(file, fileDebug)
 parser.feed(htmlStr)
 
+sortedList = sorted(parser.htmlItems.items()) 
 
-sortedHTMLItems = sorted(parser.htmlItems)
-
-for htmlItem in sortedHTMLItems:
-    fileDebug.write("{}\n".format(htmlItem.attrs))
+for sortedItem in sortedList:
+    fileDebug.write("Top: {}\n".format(sortedItem[0]))
+    
+    sortedLine = sorted(sortedItem[1].items())
+    for lineItem in sortedLine:
+        fileDebug.write("Left: {}, attrs: {}\n".format(lineItem[0], lineItem[1].attrs))
                 
 file.close()
 fileDebug.close()
