@@ -115,61 +115,54 @@ def outputCircuit(circuit, MCT, file):
     file.write("\n")
     
         
-fileDebug = open("debug.txt", "w")
-file = open("output.txt", "w")
 
-htmlStr = ""
-for line in fileinput.input():
-    htmlStr += line
-   
-    
-parser = MyHTMLParser(file, fileDebug)
-parser.feed(htmlStr)
-
-sortedList = sorted(parser.htmlItems.items()) 
-
-state = "none"
-nameX = 40
-typeX = 504
-especX = 656
-seccX = 606
-routeX = 40
-
-for sortedItem in sortedList:
-    top = sortedItem[0]
-    itemsInLine = sortedItem[1]
-    fileDebug.write("Top: {}\n".format(top))
-    
-    fileDebug.write("state: {}\n".format(state))
-    sortedLine = sorted(itemsInLine.items())
-    for lineItem in sortedLine:
-        left = lineItem[0]
-        htmlItem = lineItem[1]
-        attrs = htmlItem.attrs
-        fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
+def convert(file, fileDebug, htmlStr):
         
-    if state == "none" or state == "route":
-        if hasCircuitName(itemsInLine):
-            circuit = {
-                    'name': getAttr(itemsInLine, nameX),
-                    'type': getAttr(itemsInLine, typeX),
-                    'espec': getAttr(itemsInLine, especX),
-                }
-            state = "circuit_header"
-        if state == "route":
-            if hasRoute(itemsInLine):
-                route = getAttr(itemsInLine, routeX)
-                route = route.split(' - ')
-                
-                for item in route:
-                    if isMCT(item):
-                        outputCircuit(circuit, item, file)
-            else:
-                state = "none"
-    elif state == "circuit_header":
-        circuit['secc'] = getAttr(itemsInLine, seccX)
-        state = "route"
+    parser = MyHTMLParser(file, fileDebug)
+    parser.feed(htmlStr)
+
+    sortedList = sorted(parser.htmlItems.items()) 
+
+    state = "none"
+    nameX = 40
+    typeX = 504
+    especX = 656
+    seccX = 606
+    routeX = 40
+
+    for sortedItem in sortedList:
+        top = sortedItem[0]
+        itemsInLine = sortedItem[1]
+        fileDebug.write("Top: {}\n".format(top))
+        
+        fileDebug.write("state: {}\n".format(state))
+        sortedLine = sorted(itemsInLine.items())
+        for lineItem in sortedLine:
+            left = lineItem[0]
+            htmlItem = lineItem[1]
+            attrs = htmlItem.attrs
+            fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
+            
+        if state == "none" or state == "route":
+            if hasCircuitName(itemsInLine):
+                circuit = {
+                        'name': getAttr(itemsInLine, nameX),
+                        'type': getAttr(itemsInLine, typeX),
+                        'espec': getAttr(itemsInLine, especX),
+                    }
+                state = "circuit_header"
+            if state == "route":
+                if hasRoute(itemsInLine):
+                    route = getAttr(itemsInLine, routeX)
+                    route = route.split(' - ')
+                    
+                    for item in route:
+                        if isMCT(item):
+                            outputCircuit(circuit, item, file)
+                else:
+                    state = "none"
+        elif state == "circuit_header":
+            circuit['secc'] = getAttr(itemsInLine, seccX)
+            state = "route"
             
      
-file.close()
-fileDebug.close()

@@ -1,5 +1,4 @@
 import os
-import shutil
 
 currPath = os.path.dirname(os.path.realpath(__file__))
 PDFsDir = currPath + '\\PDFs'
