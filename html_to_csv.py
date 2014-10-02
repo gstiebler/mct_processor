@@ -71,10 +71,11 @@ class MyHTMLParser(HTMLParser):
         self.routeFontId = fontsIds[routeFont]
         self.circuitNameFontId = fontsIds[circuitNameFont]
         
-        #self.fileDebug.write("{} {} {}\n".format(self.titleHeaderFontId, self.routeFontId, self.circuitNameFontId))
+        self.fileDebug.write("titleHeaderFontId {}\n".format(self.titleHeaderFontId))
+        self.fileDebug.write("routeFontId {}\n".format(self.routeFontId))
+        self.fileDebug.write("circuitNameFontId {}\n".format(self.circuitNameFontId))
         
         
-
     def handle_starttag(self, tag, attrs):
         self.tagDepth = self.tagDepth + 1
         #self.fileDebug.write("Start tag: {0}, tag depth: {1}\n".format(tag, self.tagDepth))
@@ -150,20 +151,23 @@ def getAttr(itemsInLine, X, fileDebug):
     fileDebug.write("X not found: {}. Avaliable: {}\n".format(X, itemsInLine))
     return ""
     
-def outputCircuit(circuit, MCT, file):
-    outputOrder = ['name', 'type', 'espec', 'secc', 'route']
+def outputCircuit(circuit, MCT, fileAndPath, file):
+    
+    file.write("{};".format(circuit['name']))
     file.write("{};".format(MCT))
+    outputOrder = ['secc', 'type', 'route', 'espec']
     for outputName in outputOrder:
         str = ""
         if circuit.has_key(outputName):
             str = circuit[outputName]
         file.write("{};".format(str))
+    file.write("{};".format(fileAndPath))
     
     file.write("\n")
     
         
 
-def convert(file, fileDebug, htmlStr):
+def convert(file, fileDebug, htmlStr, fileAndPath, circuit):
         
     parser = MyHTMLParser(file, fileDebug)
     parser.feed(htmlStr)
@@ -176,13 +180,14 @@ def convert(file, fileDebug, htmlStr):
     especX = 656
     seccX = 606
     routeX = 40
-
+    
     for sortedItem in sortedList:
         top = sortedItem[0]
         itemsInLine = sortedItem[1]
-        #fileDebug.write("Top: {}\n".format(top))
+        fileDebug.write("Top: {}\n".format(top))
+        fileDebug.write("state: {}\n".format(state))
+        fileDebug.write("itemsInLine: {}\n".format(itemsInLine))
         
-        #fileDebug.write("state: {}\n".format(state))
         sortedLine = sorted(itemsInLine.items())
         for lineItem in sortedLine:
             left = lineItem[0]
@@ -192,24 +197,27 @@ def convert(file, fileDebug, htmlStr):
             
         if state == "none" or state == "route":
             if hasCircuitName(itemsInLine, parser):
+                
+                fileDebug.write("hasCircuitName\n")
                 circuit = {
                         'name': getAttr(itemsInLine, nameX, fileDebug),
                         'type': getAttr(itemsInLine, typeX, fileDebug),
                         'espec': getAttr(itemsInLine, especX, fileDebug),
                     }
                 state = "circuit_header"
-            if state == "route":
-                if hasRoute(itemsInLine, parser):
-                    route = getAttr(itemsInLine, routeX, fileDebug)
-                    route = route.split(' - ')
-                    
-                    for item in route:
-                        if isMCT(item):
-                            outputCircuit(circuit, item, file)
-                else:
-                    state = "none"
+            elif hasRoute(itemsInLine, parser):
+                fileDebug.write("hasRoute\n")
+                route = getAttr(itemsInLine, routeX, fileDebug)
+                route = route.split(' - ')
+                
+                for item in route:
+                    if isMCT(item):
+                        outputCircuit(circuit, item, fileAndPath, file)
+            else:
+                state = "none"
         elif state == "circuit_header":
             circuit['secc'] = getAttr(itemsInLine, seccX, fileDebug)
             state = "route"
             
+    return circuit
      

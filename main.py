@@ -8,6 +8,8 @@ fileDebug = open("debug.txt", "w")
 file = open("output.csv", "w")
 
 count = 0
+
+lastCircuit = ""
 for currDir, dirs, files in os.walk(HTMLDir):
 
     fileCounter = 1
@@ -16,6 +18,7 @@ for currDir, dirs, files in os.walk(HTMLDir):
         fileCounter = fileCounter + 1
             
         if not os.path.isfile(fileAndPath):
+            fileDebug.write("Arquivo nao existe: {}\n".format(fileAndPath))
             break
             
         inputFile = open(fileAndPath, "r")
@@ -26,7 +29,7 @@ for currDir, dirs, files in os.walk(HTMLDir):
         msg = "{} - Processando arquivo {}\n".format(count, fileAndPath)
         print msg
         fileDebug.write(msg)
-        html_to_csv.convert(file, fileDebug, htmlStr)
+        lastCircuit = html_to_csv.convert(file, fileDebug, htmlStr, fileAndPath, lastCircuit)
 
 file.close()
 fileDebug.close()
