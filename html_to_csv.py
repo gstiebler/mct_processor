@@ -148,8 +148,21 @@ def getAttr(itemsInLine, X, fileDebug):
         if abs(key - X) < DELTA_MAX:
             return value.attrs['value']
     
+    sortedList = sorted(itemsInLine.items()) 
+    
+    previous = ""
+    next = ""
+    for i in range(len(sortedList)):
+        key = sortedList[i][0]
+        value = sortedList[i][1]
+        if key > X:
+            next = value.attrs['value']
+            if i > 0:
+                previous = sortedList[i - 1][1].attrs['value']
+            break
+    
     fileDebug.write("X not found: {}. Avaliable: {}\n".format(X, itemsInLine))
-    return ""
+    return "{} | {}".format(previous, next)
     
 def outputCircuit(circuit, MCT, fileAndPath, file):
     
