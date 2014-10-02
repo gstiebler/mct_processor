@@ -21,6 +21,14 @@ class HTMLItem(object):
  
     def __repr__(self):
         return "HTMLItem attrs: {}".format(self.attrs)
+        
+    def __cmp__(self, other):
+        if self.top < other.top:
+            return -1
+        elif self.top > other.top:
+            return 1
+        else:
+            return self.left < other.left
 
             
 class MyHTMLParser(HTMLParser):
@@ -138,30 +146,27 @@ def hasRoute(itemsInLine, htmlParser):
     return itemsInLine[40].attrs['id'] == htmlParser.routeFontId
     
     
-def getAttr(itemsInLine, X, fileDebug):
-    if itemsInLine.has_key(X):
-        return itemsInLine[X].attrs['value']
+def getAttr(itemsInLine, fileDebug):
     
-    DELTA_MAX = 15
-    for key, value in itemsInLine.items():
-        if abs(key - X) < DELTA_MAX:
-            return value.attrs['value']
+    sortedList = sorted(itemsInLine.items()) 
     
-    fileDebug.write("X not found: {}. Avaliable: {}\n".format(X, itemsInLine))
-    return ""
+    result = []
+    for item in sortedList:
+        result.append(item[1].attrs['value'])
+    
+    return result
     
 def outputCircuit(circuit, MCT, file):
-    outputOrder = ['name', 'type', 'espec', 'secc', 'route']
+    header_1 = circuit['header_1']
+    header_2 = circuit['header_2']
+
     file.write("{};".format(MCT))
-    for outputName in outputOrder:
-        str = ""
-        if circuit.has_key(outputName):
-            str = circuit[outputName]
-        file.write("{};".format(str))
+    for item in header_1:
+        file.write("{};".format(item))
+    for item in header_2:
+        file.write("{};".format(item))
     
     file.write("\n")
-    
-        
 
 def convert(file, fileDebug, htmlStr):
         
@@ -172,9 +177,9 @@ def convert(file, fileDebug, htmlStr):
 
     state = "none"
     nameX = 40
-    typeX = 504
-    especX = 656
-    seccX = 606
+    #typeX = 504
+    #especX = 656
+    #seccX = 606
     routeX = 40
 
     for sortedItem in sortedList:
@@ -193,15 +198,13 @@ def convert(file, fileDebug, htmlStr):
         if state == "none" or state == "route":
             if hasCircuitName(itemsInLine, parser):
                 circuit = {
-                        'name': getAttr(itemsInLine, nameX, fileDebug),
-                        'type': getAttr(itemsInLine, typeX, fileDebug),
-                        'espec': getAttr(itemsInLine, especX, fileDebug),
+                        'header_1': getAttr(itemsInLine, fileDebug)
                     }
                 state = "circuit_header"
             if state == "route":
                 if hasRoute(itemsInLine, parser):
-                    route = getAttr(itemsInLine, routeX, fileDebug)
-                    route = route.split(' - ')
+                    route = getAttr(itemsInLine, fileDebug)
+                    route = route[0].split(' - ')
                     
                     for item in route:
                         if isMCT(item):
@@ -209,7 +212,7 @@ def convert(file, fileDebug, htmlStr):
                 else:
                     state = "none"
         elif state == "circuit_header":
-            circuit['secc'] = getAttr(itemsInLine, seccX, fileDebug)
+            circuit['header_2'] = getAttr(itemsInLine, fileDebug)
             state = "route"
             
      
