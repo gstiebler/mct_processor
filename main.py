@@ -19,10 +19,10 @@ for currDir, dirs, files in os.walk(HTMLDir):
         htmlStr = inputFile.read()
         inputFile.close()
         
-            
         count = count + 1
-        print "{} - Processando arquivo {}".format(count, fileAndPath)
-        html_to_csv.convert(file, fileDebug, htmlStr)
+        msg = "{} - Processando arquivo {}\n".format(count, fileAndPath)
+        print msg
+        fileDebug.write(msg)
         
 
 file.close()

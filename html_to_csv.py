@@ -19,13 +19,8 @@ class HTMLItem(object):
         else:
             self.top = 0
  
-    def __cmp__(self, other):
-        if self.top < other.top:
-            return -1
-        elif self.top > other.top:
-            return 1
-        else:
-            return self.left < other.left
+    def __repr__(self):
+        return "HTMLItem attrs: {}".format(self.attrs)
 
             
 class MyHTMLParser(HTMLParser):
@@ -61,23 +56,23 @@ class MyHTMLParser(HTMLParser):
                     
     def handle_endtag(self, tag):
         self.tagDepth = self.tagDepth - 1
-        self.fileDebug.write( "End tag  : {0}, tag depth: {1}\n".format(tag, self.tagDepth))
+        #self.fileDebug.write( "End tag  : {0}, tag depth: {1}\n".format(tag, self.tagDepth))
         
     def handle_data(self, data):
         if data == "\n":
             return
-        self.fileDebug.write( "Valor  : {}\n".format(data))
+        #self.fileDebug.write( "Valor  : {}\n".format(data))
         lastAttr = self.lastAttr
         lastAttr['value'] = data
         htmlItem = HTMLItem(copy.deepcopy(lastAttr))
         if not self.htmlItems.has_key(htmlItem.top):
             self.htmlItems[htmlItem.top] = {}
         self.htmlItems[htmlItem.top][htmlItem.left] = htmlItem
-        self.fileDebug.write("lastAttr: {}\n".format(lastAttr))
+        #self.fileDebug.write("lastAttr: {}\n".format(lastAttr))
         
         
 def isMCT(name):
-    return name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS"
+    return name[:2] == "BF" or name[:2] == "BS"
 
 def hasCircuitName(itemsInLine):
     if not itemsInLine.has_key(40):
@@ -96,12 +91,17 @@ def hasRoute(itemsInLine):
     return itemsInLine[40].attrs['id'] == 'f4'
     
     
-def getAttr(itemsInLine, X):
-    if not itemsInLine.has_key(X):
-        return ""
-        
-    return itemsInLine[X].attrs['value']
+def getAttr(itemsInLine, X, fileDebug):
+    if itemsInLine.has_key(X):
+        return itemsInLine[X].attrs['value']
     
+    DELTA_MAX = 15
+    for key, value in itemsInLine.items():
+        if abs(key - X) < DELTA_MAX:
+            return value.attrs['value']
+    
+    fileDebug.write("X not found: {}. Avaliable: {}\n", X, itemsInLine)
+    return ""
     
 def outputCircuit(circuit, MCT, file):
     outputOrder = ['name', 'type', 'espec', 'secc', 'route']
@@ -133,27 +133,27 @@ def convert(file, fileDebug, htmlStr):
     for sortedItem in sortedList:
         top = sortedItem[0]
         itemsInLine = sortedItem[1]
-        fileDebug.write("Top: {}\n".format(top))
+        #fileDebug.write("Top: {}\n".format(top))
         
-        fileDebug.write("state: {}\n".format(state))
+        #fileDebug.write("state: {}\n".format(state))
         sortedLine = sorted(itemsInLine.items())
         for lineItem in sortedLine:
             left = lineItem[0]
             htmlItem = lineItem[1]
             attrs = htmlItem.attrs
-            fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
+            #fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
             
         if state == "none" or state == "route":
             if hasCircuitName(itemsInLine):
                 circuit = {
-                        'name': getAttr(itemsInLine, nameX),
-                        'type': getAttr(itemsInLine, typeX),
-                        'espec': getAttr(itemsInLine, especX),
+                        'name': getAttr(itemsInLine, nameX, fileDebug),
+                        'type': getAttr(itemsInLine, typeX, fileDebug),
+                        'espec': getAttr(itemsInLine, especX, fileDebug),
                     }
                 state = "circuit_header"
             if state == "route":
                 if hasRoute(itemsInLine):
-                    route = getAttr(itemsInLine, routeX)
+                    route = getAttr(itemsInLine, routeX, fileDebug)
                     route = route.split(' - ')
                     
                     for item in route:
@@ -162,7 +162,7 @@ def convert(file, fileDebug, htmlStr):
                 else:
                     state = "none"
         elif state == "circuit_header":
-            circuit['secc'] = getAttr(itemsInLine, seccX)
+            circuit['secc'] = getAttr(itemsInLine, seccX, fileDebug)
             state = "route"
             
      
