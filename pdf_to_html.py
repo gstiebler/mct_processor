@@ -14,9 +14,13 @@ for currDir, dirs, files in os.walk(PDFsDir):
         os.makedirs(newHTMLDir)
         
     for file in files:
+        if file[-4:].upper() != ".PDF":
+            continue
+			
         fileAndPath = "{}\\{}".format(currDir, file)
         outputDir = "{}\\{}".format(newHTMLDir, file[:-4])
-        command = "{} {} {}".format(pdf2htmlExe, fileAndPath, outputDir)
+        command = "{} \"{}\" \"{}\"".format(pdf2htmlExe, fileAndPath, outputDir)
         count = count + 1
         print "{} - Convertendo arquivo {}...".format(count, fileAndPath)
+        print command
         os.system(command)
