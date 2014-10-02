@@ -97,7 +97,20 @@ def hasRoute(itemsInLine):
     
     
 def getAttr(itemsInLine, X):
+    if not itemsInLine.has_key(X):
+        return ""
+        
     return itemsInLine[X].attrs['value']
+    
+    
+def outputCircuit(circuit, file):
+    outputOrder = ['name', 'type', 'espec', 'secc', 'route']
+    file.write("++++++++++++\n")
+    for outputName in outputOrder:
+        str = ""
+        if circuit.has_key(outputName):
+            str = circuit[outputName]
+        file.write("{}: {}\n".format(outputName, str))
     
         
 fileDebug = open("debug.txt", "w")
@@ -120,41 +133,43 @@ especX = 656
 seccX = 606
 routeX = 40
 
-outputOrder = ['name', 'type', 'espec', 'secc', 'route']
-
 for sortedItem in sortedList:
     top = sortedItem[0]
     itemsInLine = sortedItem[1]
     fileDebug.write("Top: {}\n".format(top))
     
+    fileDebug.write("state: {}\n".format(state))
     sortedLine = sorted(itemsInLine.items())
     for lineItem in sortedLine:
         left = lineItem[0]
         htmlItem = lineItem[1]
         attrs = htmlItem.attrs
         fileDebug.write("Left: {}, attrs: {}\n".format(left, attrs))
-    
-    if state == "none":
+        
+    if state == "none" or state == "route":
         if hasCircuitName(itemsInLine):
+            if state == "route":
+                outputCircuit(circuit, file)
             circuit = {
                     'name': getAttr(itemsInLine, nameX),
                     'type': getAttr(itemsInLine, typeX),
                     'espec': getAttr(itemsInLine, especX),
                 }
-            state = "circuit_header_1"
-    elif state == "circuit_header_1":
+            state = "circuit_header"
+        if state == "route":
+            if hasRoute(itemsInLine):
+                route = getAttr(itemsInLine, routeX)
+                route = route.split(' - ')
+                if circuit.has_key('route'):
+                    circuit['route'] = circuit['route'] + route
+                else:
+                    circuit['route'] = route
+            else:
+                outputCircuit(circuit, file)
+                state = "none"
+    elif state == "circuit_header":
         circuit['secc'] = getAttr(itemsInLine, seccX)
         state = "route"
-    elif state == "route":
-        if hasRoute(itemsInLine):
-            route = getAttr(itemsInLine, routeX)
-            route = route.split(' - ')
-            circuit['route'] = route
-        else:
-            file.write("++++++++++++\n")
-            for outputName in outputOrder:
-                file.write("{}: {}\n".format(outputName, circuit[outputName]))
-            state = "none"
             
      
 file.close()
