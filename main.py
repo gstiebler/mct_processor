@@ -76,7 +76,7 @@ class MyHTMLParser(HTMLParser):
         self.fileDebug.write("lastAttr: {}\n".format(lastAttr))
         
         
-def ehMCT(name):
+def isMCT(name):
     return name[:2] == "BF" or name[:2] == "OF" or name[:2] == "BS"
 
 def hasCircuitName(itemsInLine):
@@ -103,14 +103,16 @@ def getAttr(itemsInLine, X):
     return itemsInLine[X].attrs['value']
     
     
-def outputCircuit(circuit, file):
+def outputCircuit(circuit, MCT, file):
     outputOrder = ['name', 'type', 'espec', 'secc', 'route']
-    file.write("++++++++++++\n")
+    file.write("{};".format(MCT))
     for outputName in outputOrder:
         str = ""
         if circuit.has_key(outputName):
             str = circuit[outputName]
-        file.write("{}: {}\n".format(outputName, str))
+        file.write("{};".format(str))
+    
+    file.write("\n")
     
         
 fileDebug = open("debug.txt", "w")
@@ -148,8 +150,6 @@ for sortedItem in sortedList:
         
     if state == "none" or state == "route":
         if hasCircuitName(itemsInLine):
-            if state == "route":
-                outputCircuit(circuit, file)
             circuit = {
                     'name': getAttr(itemsInLine, nameX),
                     'type': getAttr(itemsInLine, typeX),
@@ -160,12 +160,11 @@ for sortedItem in sortedList:
             if hasRoute(itemsInLine):
                 route = getAttr(itemsInLine, routeX)
                 route = route.split(' - ')
-                if circuit.has_key('route'):
-                    circuit['route'] = circuit['route'] + route
-                else:
-                    circuit['route'] = route
+                
+                for item in route:
+                    if isMCT(item):
+                        outputCircuit(circuit, item, file)
             else:
-                outputCircuit(circuit, file)
                 state = "none"
     elif state == "circuit_header":
         circuit['secc'] = getAttr(itemsInLine, seccX)
