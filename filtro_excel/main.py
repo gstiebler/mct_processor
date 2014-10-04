@@ -14,7 +14,7 @@ for row in range(inputSheet.nrows):
     values = []
     for col in range(inputSheet.ncols):
         value = inputSheet.cell(row, col).value
-        #sheet.write(row, col, value) # row, column, value   
+        sheet.write(row, col, value) # row, column, value   
         
         if type(value) is unicode:
             value = value.encode('ascii','replace')
